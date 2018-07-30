@@ -43,6 +43,12 @@ def generate_synonyms(main_list, check_list, synonym_count):
 
     all_synonyms = []
     final_list = []
+    syn_check_list = []
+    
+    for cl in check_list:
+        synset_cl = wordnet.synsets(cl)
+        if len(synset_cl) > 0:
+            syn_check_list.append(synset_cl[0])
     
     for my_word in main_list:
         synonym_cand = []
@@ -55,12 +61,22 @@ def generate_synonyms(main_list, check_list, synonym_count):
                     syn = lm
                     break
             if (syn not in main_list) and (syn not in check_list) and (syn not in all_synonyms) and (len(syn.split()) == 1):
-                synonym_cand.append(syn)
+                wn_syn = wordnet.synsets(syn)
+                if len(wn_syn) > 0:
+                    wn_syn = wn_syn[0]
+                    score = 0
+                    for scl in syn_check_list:
+                        tmp_score = wn_syn.wup_similarity(scl)
+                        if tmp_score is not None:
+                            score += tmp_score
+                    synonym_cand.append((score, syn))
 
-        if len(synonym_cand) >= synonym_count:
-            generate_synonym = sample(synonym_cand, synonym_count)
-        else:
-            generate_synonym = synonym_cand
+        generate_synonym = []
+        synonym_cand.sort(reverse=True)
+        for i, sc in enumerate(synonym_cand):
+            if i == synonym_count:
+                break
+            generate_synonym.append(sc[1])
             
         all_synonyms.extend(generate_synonym)
         final_list.append((my_word, generate_synonym))
