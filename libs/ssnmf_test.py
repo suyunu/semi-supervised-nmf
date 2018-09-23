@@ -581,7 +581,7 @@ def schwartz_word_scores(W_test_doc, tfidf_test_doc, word_topic_scores, word_top
     return score_df
 
 
-def get_pretrained_words(pre_trained_doc, word_count, normalized):
+def get_pretrained_words(pre_trained_doc, normalized, word_count):
     pre_nmf_list, pre_tfidf_vectorizer = pickle.load( open( pre_trained_doc, "rb" ) )
     
     n_topics = pre_nmf_list[0].components_.shape[0]-1
@@ -621,7 +621,7 @@ def get_pretrained_words(pre_trained_doc, word_count, normalized):
     return score_df
 
 def export_pretrained_excel(pre_trained_doc, filepath, word_count=-1):
-    df = get_pretrained_words(pre_trained_doc, word_count)
+    df = get_pretrained_words(pre_trained_doc,  normalized, word_count)
     df.to_excel(filepath)
 
 def add_corpus_docs(doc_names, test_corpus, insigth_api_key):
@@ -647,6 +647,11 @@ def prepare_test_docs(test_doc_names, pre_trained_doc_name, betaloss):
     test_context['tfidf_test'] = tfidf_test
 
     return test_corpusPP, test_context
+
+def report_df(pre_trained_doc, normalized, word_count):
+
+    return get_pretrained_words(pre_trained_doc, normalized, word_count)
+
 
 def report_interactive_result(test_context, test_doc_names, pre_trained_doc_name, purity_score, word_count, only_doc_words):
     
