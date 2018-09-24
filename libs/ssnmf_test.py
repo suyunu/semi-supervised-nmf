@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 from time import time
 
+import warnings
+warnings.filterwarnings("ignore")
+
 import nltk
 from nltk.corpus import brown
 from nltk.tokenize.moses import MosesDetokenizer
@@ -13,6 +16,8 @@ import pickle
 import requests
 import json
 import re
+
+from newspaper import Article
 
 import matplotlib.pyplot as plt
 from math import pi
@@ -28,8 +33,7 @@ from bs4 import BeautifulSoup
 import libs.text_preprocess as tp
 import libs.synonyms as syn
 
-import warnings
-warnings.filterwarnings("ignore")
+
 
 
 categories=['universalism', 'hedonism', 'achievement', 'power',
@@ -245,7 +249,8 @@ def export_to_csv(W, docs, doc_names, filepath):
     df.to_csv(filepath)
     return df
 
-def export_word_scores_excel(W_test_norms, W_test_list, tfidf_test, doc_names, pre_trained_doc, filepath, purity_score=False, word_count=10, only_doc_words=False):
+def export_word_scores_excel(test_context, doc_names, pre_trained_doc, filepath, purity_score=False, word_count=10, only_doc_words=False):
+    W_test_norms, W_test_list, tfidf_test = test_context['W_test_norms'], test_context['W_test_list'], test_context['tfidf_test']
     writer = pd.ExcelWriter(filepath, engine = 'xlsxwriter')
     
     pre_nmf_list, pre_tfidf_vectorizer = pickle.load( open( pre_trained_doc, "rb" ) )
@@ -410,6 +415,7 @@ def evaluate_test_corpus(pretrained_filepath, test_corpusPP, word_replacements, 
     nmf_list, tfidf_vectorizer = pickle.load( open( pretrained_filepath, "rb" ) )
     
     W_test_list = []
+    print("Fitting NMF for " + str(categories)[1:-1])
     for i, nmf in enumerate(nmf_list):
         #print("Fitting NMF for " + str(categories[i]))
         if word_replacements == []:
@@ -422,7 +428,7 @@ def evaluate_test_corpus(pretrained_filepath, test_corpusPP, word_replacements, 
         W_test = evaluate_docs([], nmf, tfidf_test, betaloss = betaloss)
         W_test_list.append(W_test)
         
-    print("Fitting NMF for " + str(categories)[1:-1])
+    
     # Sum up sub topics
     W_test_norms = []
     for W_test in W_test_list:
@@ -459,25 +465,43 @@ def add_corpus_txt(filepath, test_corpus):
         test_corpus.append("")
         print("File not found - " + filepath)
 
+def url_scraper(url):
+    try:
+        article = Article(url)
+        article.download()
+        article.parse()
+        news_info =  {
+            "url": url,
+            "title": article.title,
+            "text": article.text,
+            "summary": "",
+            #"authors": article.authors,
+            "keywords": [],
+            "publish_date": article.publish_date.__str__()[:19],
+            #"top_image": article.top_image
+        }
+    except:
+        news_info =  {
+            "Error": "Content Not Found"
+        }
+
+    try:
+        article.nlp()
+        news_info["summary"] = article.summary,
+        news_info["keywords"] = article.keywords
+    except:
+        pass
+
+    return news_info
+
 def add_corpus_url(url, api_key, test_corpus):
-    insightIP = 'http://178.62.229.16'
-    insightPort = '8484'
-    insightVersion = 'v1.0'
-
-    insightSetting = insightIP + ':' + insightPort + '/api/' + insightVersion 
-    request = '/text_analytics/url_scraper?' + 'url=' + url + '&' + 'api_key=' + api_key
-
-    # send a request
-    res = requests.get(insightSetting + request)
-    if "Unauthorized Connection" in res.json():
+    res = url_scraper(url)
+    if "Error" in res:
         test_corpus.append("")
-        print(res.json()["Unauthorized Connection"] + " - " + url)
-    elif "Error" in res.json():
-        test_corpus.append("")
-        print(res.json()["Error"] + " - " + url)
-    elif "text" in res.json():
-        test_corpus.append(res.json()['text'])
-        if res.json()['text'] == "":
+        print(res["Error"] + " - " + url)
+    elif "text" in res:
+        test_corpus.append(res['text'])
+        if res['text'] == "":
             print("Empty text - " + url)
     else:
         test_corpus.append("")
@@ -634,7 +658,11 @@ def add_corpus_docs(doc_names, test_corpus, insigth_api_key):
 def prepare_test_docs(test_doc_names, pre_trained_doc_name, betaloss):
     test_corpus = []
     insigth_api_key = "thisisinsightapikey" #needs to be filled
+
+    print("Reading data...")
     add_corpus_docs(test_doc_names, test_corpus, insigth_api_key)
+
+    print("Cleaning data...")
     test_corpusPP = [tp.clean_text(doc) for doc in test_corpus]
     
     test_context = {}
@@ -657,11 +685,11 @@ def report_interactive_result(test_context, test_doc_names, pre_trained_doc_name
     
     return print_interactive_test_results(test_context['W_test_high'], test_context['W_test_norms'], test_context['W_test_list'], test_context['tfidf_test'], test_doc_names, pre_trained_doc_name, purity_score, word_count, only_doc_words)
 
-def report_test_excel(test_context, test_corpusPP, test_doc_names, output_file = "test_result.xlsx"):
+def export_excel(test_context, test_corpusPP, test_doc_names, output_file = "test_result.xlsx"):
 
     return export_to_excel(test_context['W_test_high'], test_corpusPP, test_doc_names, output_file)
     
-def report_test_csv(test_context, test_corpusPP, test_doc_names, output_file = "test_result.csv"):
+def export_csv(test_context, test_corpusPP, test_doc_names, output_file = "test_result.csv"):
 
     return export_to_csv(test_context['W_test_high'], test_corpusPP, test_doc_names, output_file)
     

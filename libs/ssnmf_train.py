@@ -309,7 +309,7 @@ def train_corpus(corpus, data, brown_corpus, n_topics, betaloss, bckg_brown):
     n_components = n_topics*(n_themes)
     
     
-    print("Extracting tf-idf features for NMF...")
+    print("Extracting tf features for NMF...")
     #tfidf_vectorizer= TfidfVectorizer(min_df=1, ngram_range=(1,3), max_features=50000)
     tfidf_vectorizer= CountVectorizer(min_df=1, ngram_range=(1,3), max_features=50000)
     t0 = time()
@@ -344,7 +344,7 @@ def train_corpus(corpus, data, brown_corpus, n_topics, betaloss, bckg_brown):
     X = tfidf 
     nmf_list = []
     H_list = initialize_H3(X.toarray(), theme_counts, n_topics, p=20)
-
+    print("Fitting NMF for " + str(categories)[1:-1])
     for i, W in enumerate(W_list):
         #print("Fitting NMF for " + str(theme_counts.index[i][1]))
         t0 = time()
@@ -358,12 +358,12 @@ def train_corpus(corpus, data, brown_corpus, n_topics, betaloss, bckg_brown):
         #print("done in %0.2fs." % (time() - t0))
 
         nmf_list.append(nmf)
-    print("Fitting NMF for " + str(categories)[1:-1])
+    
     #print("Fitting NMF for " + str(theme_counts.index[:][1]))
     
     return nmf_list, W_list, tfidf, tfidf_vectorizer
     
-def get_pretrained_words(pre_nmf_list, pre_tfidf_vectorizer, word_count, normalized=False):
+def get_pretrained_words(pre_nmf_list, pre_tfidf_vectorizer, word_count, normalized=True):
     n_topics = pre_nmf_list[0].components_.shape[0]-1
     word_list = []
     feature_names = pre_tfidf_vectorizer.get_feature_names()
@@ -371,7 +371,7 @@ def get_pretrained_words(pre_nmf_list, pre_tfidf_vectorizer, word_count, normali
     nmf_comps = []
     for pnmf in pre_nmf_list:
         aa = pnmf.components_
-        nmf_comps.append(aa/np.sum(aa,axis=1)[:, np.newaxis])
+        nmf_comps.append(1000*aa/np.sum(aa,axis=1)[:, np.newaxis])
     
     for theme in range(10):
         #word_topic = cumulate_W(pre_nmf_list[theme].components_.T,n_topics).T[anti]
@@ -384,7 +384,7 @@ def get_pretrained_words(pre_nmf_list, pre_tfidf_vectorizer, word_count, normali
             for i, idx in enumerate(list(reversed(word_topic.argsort()))):
                 if i == word_count:
                     break
-                tmp_list.append((feature_names[idx], np.round(word_topic[idx], 3)))
+                tmp_list.append((feature_names[idx], np.round(word_topic[idx], 2)))
             word_list.append(tmp_list)
     
     schwartz_word_score = []
@@ -405,8 +405,9 @@ def export_pretrained_excel(pre_nmf_list, pre_tfidf_vectorizer, filepath, word_c
     df.to_excel(filepath)
 
 def train_model(filepath, n_topics, betaloss, bckg_brown):
+    print("Reading data...")
     data = read_data(filepath)
-
+    print("Cleaning data...")
     # corpusPP = preprocess_corpus(corpus) ## To use Bulent Ozer's library
     corpusPP = list(data.text.apply(tp.clean_text))
 
@@ -425,11 +426,11 @@ def report_training_topics(train_context, n_top_words, n_topics):
     for i in range(10):
         print_top_words(train_context['nmf_list'], i, train_context['tfidf_vectorizer'], n_top_words, n_topics)
 
-def report_df(train_context, word_count):
+def report_excitation_matrix(train_context, word_count):
 
     return get_pretrained_words(train_context['nmf_list'], train_context['tfidf_vectorizer'], word_count)
 
-def report_train_excel(train_context, output_file, word_count):
+def export_excitation_matrix(train_context, output_file, word_count):
 
     return export_pretrained_excel(train_context['nmf_list'], train_context['tfidf_vectorizer'], output_file, word_count)
 
