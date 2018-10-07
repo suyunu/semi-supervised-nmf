@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 from time import time
 
+import warnings
+warnings.filterwarnings("ignore")
+
 import nltk
 from nltk.corpus import brown
 from nltk.tokenize.moses import MosesDetokenizer
@@ -19,9 +22,6 @@ from ipywidgets import interact, fixed
 import pickle
 
 import libs.text_preprocess as tp
-
-import warnings
-warnings.filterwarnings("ignore")
 
 
 categories=['universalism', 'hedonism', 'achievement', 'power',

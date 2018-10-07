@@ -494,7 +494,7 @@ def url_scraper(url):
 
     return news_info
 
-def add_corpus_url(url, api_key, test_corpus):
+def add_corpus_url(url, test_corpus):
     res = url_scraper(url)
     if "Error" in res:
         test_corpus.append("")
@@ -648,19 +648,18 @@ def export_pretrained_excel(pre_trained_doc, filepath, word_count=-1):
     df = get_pretrained_words(pre_trained_doc,  normalized, word_count)
     df.to_excel(filepath)
 
-def add_corpus_docs(doc_names, test_corpus, insigth_api_key):
+def add_corpus_docs(doc_names, test_corpus):
     for doc in doc_names:
         if re.match("^(http|https)://", doc) is None:
             add_corpus_txt(doc, test_corpus)
         else:
-            add_corpus_url(doc, insigth_api_key, test_corpus)
+            add_corpus_url(doc, test_corpus)
 
 def prepare_test_docs(test_doc_names, pre_trained_doc_name, betaloss):
     test_corpus = []
-    insigth_api_key = "thisisinsightapikey" #needs to be filled
 
     print("Reading data...")
-    add_corpus_docs(test_doc_names, test_corpus, insigth_api_key)
+    add_corpus_docs(test_doc_names, test_corpus)
 
     print("Cleaning data...")
     test_corpusPP = [tp.clean_text(doc) for doc in test_corpus]

@@ -169,16 +169,16 @@ def stop_and_lemmatize(word_list):
 def clean_text(text):
     start_time=time.time()
     text = fix_bad_wording(text)
-    print("Fix bad wording: ",time.time()-start_time,"s")
+    #print("Fix bad wording: ",time.time()-start_time,"s")
     
     start_time=time.time()
     text = clean_tokenize(text)
-    print("Tokenize: ",time.time()-start_time,"s")
+    #print("Tokenize: ",time.time()-start_time,"s")
     
     start_time=time.time()
     text = stop_and_lemmatize(text)
-    print("Remove stopwords and Lemmatize: ",time.time()-start_time,"s")
-    print()
+    #print("Remove stopwords and Lemmatize: ",time.time()-start_time,"s")
+    #print()
     
     return ' '.join(text)
 
